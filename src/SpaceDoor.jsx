@@ -1,4 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔧 GOOGLE SHEETS CONFIG — paste your Sheet ID here
+// HOW TO GET SHEET ID:
+//   Your sheet URL looks like:
+//   https://docs.google.com/spreadsheets/d/  <<SHEET_ID_HERE>>  /edit
+//   Copy that long ID and paste below.
+// ─────────────────────────────────────────────────────────────────────────────
+const SHEET_ID = "1TsfOB9fYDP_CvRVQWiW9Le2Y3zOflckJrZnaV2x0zt4";
+const SHEET_NAME = "Products"; // Must match your sheet tab name exactly
+
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
 // ─── SVG PROFILE SHAPE RENDERERS ─────────────────────────────────────────────
 const Shapes = {
@@ -143,44 +155,23 @@ function ProfileSVG({ name, accent, bg }) {
   );
 }
 
-// ─── PROFILE PREVIEW (Image → SVG fallback) ───────────────────────────────────
-// If design.image URL is set → shows real photo
-// If null or broken → falls back to SVG shape illustration
-// To add images later: set image:"https://..." in the designs array.
 function ProfilePreview({ design, accent, bg }) {
   const [imgErr, setImgErr] = useState(false);
   const showImage = design.image && !imgErr;
-
   if (showImage) {
     return (
-      <div style={{
-        width:80, height:62, borderRadius:6, overflow:"hidden",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        background:bg, position:"relative",
-      }}>
-        <img
-          src={design.image}
-          alt={design.name}
-          onError={()=>setImgErr(true)}
-          style={{width:"100%",height:"100%",objectFit:"contain",display:"block",padding:"4px"}}
-        />
-        <span style={{
-          position:"absolute",bottom:2,left:3,
-          fontSize:"7px",fontWeight:800,letterSpacing:"0.06em",
-          color:accent,opacity:0.55,fontFamily:"'DM Mono',monospace",textTransform:"uppercase",
-        }}>IMG</span>
+      <div style={{ width:80, height:62, borderRadius:6, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", background:bg, position:"relative" }}>
+        <img src={design.image} alt={design.name} onError={()=>setImgErr(true)}
+          style={{width:"100%",height:"100%",objectFit:"contain",display:"block",padding:"4px"}}/>
+        <span style={{ position:"absolute",bottom:2,left:3,fontSize:"7px",fontWeight:800,letterSpacing:"0.06em",color:accent,opacity:0.55,fontFamily:"'DM Mono',monospace",textTransform:"uppercase" }}>IMG</span>
       </div>
     );
   }
-
   return <ProfileSVG name={design.name} accent={accent} bg={bg}/>;
 }
 
-// ─── DATA ─────────────────────────────────────────────────────────────────────
-// NOTE: Add image URLs in the `image` field for each profile.
-// Example: image: "https://your-cdn.com/profiles/SF16-1T.png"
-// When image is set → shows real photo. When null → shows SVG shape fallback.
-const designs = [
+// ─── HARDCODED BASE DESIGNS ───────────────────────────────────────────────────
+const BASE_DESIGNS = [
   {id:1,  name:"SF16-1T",   series:"SPACEDOR-16",    size:"53 × 80 mm",    image:null},
   {id:2,  name:"SF16-1S",   series:"SPACEDOR-16",    size:"55 × 33 mm",    image:null},
   {id:3,  name:"SF16-P",    series:"SPACEDOR-16",    size:"80 × 8 mm",     image:null},
@@ -266,6 +257,46 @@ const PAL = {
   "PERFECT SYSTEM": {accent:"#1E293B",light:"#F8FAFC",badge:"#CBD5E1",text:"#0F172A"},
 };
 
+const EXTRA_COLORS = [
+  {accent:"#0EA5E9",light:"#F0F9FF",badge:"#BAE6FD",text:"#0369A1"},
+  {accent:"#8B5CF6",light:"#F5F3FF",badge:"#DDD6FE",text:"#5B21B6"},
+  {accent:"#F59E0B",light:"#FFFBEB",badge:"#FDE68A",text:"#92400E"},
+  {accent:"#EF4444",light:"#FFF1F2",badge:"#FECACA",text:"#B91C1C"},
+  {accent:"#14B8A6",light:"#F0FDFA",badge:"#99F6E4",text:"#0F766E"},
+  {accent:"#F97316",light:"#FFF7ED",badge:"#FED7AA",text:"#C2410C"},
+];
+
+// ─── PARSE CSV FROM GOOGLE SHEETS ────────────────────────────────────────────
+// Sheet columns (Row 1 = header, skip it):
+//   A: id | B: name | C: series | D: size | E: length | F: image_url
+function parseCSV(csv) {
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) return [];
+  return lines.slice(1).map((line, idx) => {
+    const cols = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === "," && !inQ) { cols.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+    const clean = s => (s || "").replace(/^"|"$/g, "").trim();
+    const [rawId, name, series, size, length, image] = cols;
+    if (!clean(name) || !clean(series)) return null;
+    return {
+      id: `sheet_${clean(rawId) || idx + 1}`,
+      name: clean(name),
+      series: clean(series),
+      size: clean(size),
+      length: clean(length),
+      image: clean(image).startsWith("http") ? clean(image) : null,
+      fromSheet: true,
+    };
+  }).filter(Boolean);
+}
+
 // ─── ICONS ────────────────────────────────────────────────────────────────────
 const I = {
   Plus:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>,
@@ -276,38 +307,29 @@ const I = {
   Check:()=><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
   Grid:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
   List:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>,
+  Refresh:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  Sheet:()=><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>,
 };
 
 // ─── DESIGN CARD ──────────────────────────────────────────────────────────────
-function DesignCard({ design, onAdd, isSelected, viewMode }) {
+function DesignCard({ design, onAdd, isSelected, viewMode, pal }) {
   const [qty, setQty] = useState(1);
-  const p = PAL[design.series] || PAL["PERFECT SYSTEM"];
+  const p = pal;
+  const doAdd = () => { if (!qty || qty < 1) return; onAdd({ ...design, quantity: qty }); setQty(1); };
 
-  const doAdd = () => {
-    if (!qty || qty < 1) return;
-    onAdd({ ...design, quantity: qty });
-    setQty(1);
-  };
-
-  // ── List view ──
   if (viewMode === "list") return (
-    <div style={{
-      background:"#fff",
-      border: isSelected ? `2px solid ${p.accent}` : "2px solid #F1F5F9",
-      borderRadius:"12px", padding:"10px 14px",
-      display:"flex", alignItems:"center", gap:"12px",
-      transition:"all 0.18s", boxShadow: isSelected ? `0 2px 16px ${p.accent}22` : "0 1px 3px rgba(0,0,0,0.05)",
-    }}>
+    <div style={{ background:"#fff", border: isSelected?`2px solid ${p.accent}`:"2px solid #F1F5F9", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", gap:"12px", transition:"all 0.18s", boxShadow: isSelected?`0 2px 16px ${p.accent}22`:"0 1px 3px rgba(0,0,0,0.05)" }}>
       <div style={{flexShrink:0,borderRadius:"10px",background:p.light,padding:"3px",border:`1.5px solid ${p.badge}`}}>
         <ProfilePreview design={design} accent={p.accent} bg={p.light}/>
       </div>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontFamily:"'DM Mono',monospace",fontWeight:700,fontSize:"13px",color:"#0F172A",display:"flex",alignItems:"center",gap:"6px"}}>
+        <div style={{fontFamily:"'DM Mono',monospace",fontWeight:700,fontSize:"13px",color:"#0F172A",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
           {design.name}
+          {design.fromSheet && <span style={{background:"#D1FAE5",color:"#065F46",borderRadius:"99px",fontSize:"8px",padding:"1px 6px",fontWeight:700}}>SHEET</span>}
           {isSelected && <span style={{background:p.accent,color:"#fff",borderRadius:"99px",fontSize:"9px",padding:"1px 7px",fontWeight:700}}>IN CART</span>}
         </div>
         <div style={{fontSize:"10px",color:p.text,fontWeight:700,marginTop:"2px",textTransform:"uppercase",letterSpacing:"0.05em"}}>{design.series}</div>
-        <div style={{fontSize:"11px",color:"#94A3B8",marginTop:"1px"}}>{design.size}</div>
+        <div style={{fontSize:"11px",color:"#94A3B8",marginTop:"1px"}}>{design.size}{design.length?` · L: ${design.length}`:""}</div>
       </div>
       <div style={{display:"flex",gap:"6px",alignItems:"center",flexShrink:0}}>
         <input type="number" min="1" value={qty} onChange={e=>setQty(parseInt(e.target.value)||"")}
@@ -320,42 +342,21 @@ function DesignCard({ design, onAdd, isSelected, viewMode }) {
     </div>
   );
 
-  // ── Grid view ──
   return (
-    <div style={{
-      background:"#fff",
-      border: isSelected ? `2px solid ${p.accent}` : "2px solid #F1F5F9",
-      borderRadius:"14px", padding:"13px",
-      display:"flex", flexDirection:"column", gap:"10px",
-      transition:"all 0.18s",
-      boxShadow: isSelected ? `0 4px 24px ${p.accent}28` : "0 1px 4px rgba(0,0,0,0.06)",
-      position:"relative",
-    }}>
-      {isSelected && (
-        <div style={{position:"absolute",top:9,right:9,background:p.accent,borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 2px 8px ${p.accent}55`}}>
-          <I.Check/>
+    <div style={{ background:"#fff", border: isSelected?`2px solid ${p.accent}`:"2px solid #F1F5F9", borderRadius:"14px", padding:"13px", display:"flex", flexDirection:"column", gap:"10px", transition:"all 0.18s", boxShadow: isSelected?`0 4px 24px ${p.accent}28`:"0 1px 4px rgba(0,0,0,0.06)", position:"relative" }}>
+      {isSelected && <div style={{position:"absolute",top:9,right:9,background:p.accent,borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 2px 8px ${p.accent}55`}}><I.Check/></div>}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"inline-flex",background:p.badge,color:p.text,fontSize:"9px",fontWeight:800,letterSpacing:"0.07em",padding:"2px 8px",borderRadius:"99px",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>
+          {design.series}
         </div>
-      )}
-
-      {/* Series badge */}
-      <div style={{display:"inline-flex",alignSelf:"flex-start",background:p.badge,color:p.text,fontSize:"9px",fontWeight:800,letterSpacing:"0.07em",padding:"2px 8px",borderRadius:"99px",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>
-        {design.series}
+        {design.fromSheet && <span style={{background:"#D1FAE5",color:"#065F46",borderRadius:"99px",fontSize:"8px",padding:"1px 6px",fontWeight:700,fontFamily:"'DM Mono',monospace"}}>SHEET</span>}
       </div>
-
-      {/* SVG Profile preview */}
       <div style={{display:"flex",justifyContent:"center",alignItems:"center",background:p.light,borderRadius:"10px",padding:"6px 8px",border:`1.5px solid ${p.badge}`,position:"relative",minHeight:"74px"}}>
         <ProfilePreview design={design} accent={p.accent} bg={p.light}/>
-        <div style={{position:"absolute",bottom:3,right:6,fontSize:"8px",color:p.accent,fontFamily:"'DM Mono',monospace",fontWeight:600,opacity:0.65}}>
-          {design.size}
-        </div>
+        <div style={{position:"absolute",bottom:3,right:6,fontSize:"8px",color:p.accent,fontFamily:"'DM Mono',monospace",fontWeight:600,opacity:0.65}}>{design.size}</div>
       </div>
-
-      {/* Name */}
-      <div style={{fontSize:"14px",fontWeight:800,color:"#0F172A",fontFamily:"'DM Mono',monospace",letterSpacing:"-0.02em"}}>
-        {design.name}
-      </div>
-
-      {/* Qty + Add */}
+      <div style={{fontSize:"14px",fontWeight:800,color:"#0F172A",fontFamily:"'DM Mono',monospace",letterSpacing:"-0.02em"}}>{design.name}</div>
+      {design.length && <div style={{fontSize:"11px",color:"#64748B",marginTop:"-6px"}}>Length: {design.length}</div>}
       <div style={{display:"flex",gap:"6px",alignItems:"center",marginTop:"auto"}}>
         <input type="number" min="1" value={qty} onChange={e=>setQty(parseInt(e.target.value)||"")}
           style={{width:"52px",padding:"7px 6px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"13px",fontWeight:700,color:"#0F172A",textAlign:"center",outline:"none",fontFamily:"'DM Mono',monospace"}}/>
@@ -369,8 +370,8 @@ function DesignCard({ design, onAdd, isSelected, viewMode }) {
 }
 
 // ─── CART ROW ─────────────────────────────────────────────────────────────────
-function CartRow({ item, onRemove, onQtyChange }) {
-  const p = PAL[item.series] || PAL["PERFECT SYSTEM"];
+function CartRow({ item, onRemove, onQtyChange, pal }) {
+  const p = pal;
   return (
     <tr style={{borderBottom:"1px solid #F1F5F9"}}>
       <td style={{padding:"10px 14px"}}>
@@ -384,7 +385,7 @@ function CartRow({ item, onRemove, onQtyChange }) {
           </div>
         </div>
       </td>
-      <td style={{padding:"10px 14px",fontSize:"12px",color:"#64748B",whiteSpace:"nowrap"}}>{item.size}</td>
+      <td style={{padding:"10px 14px",fontSize:"12px",color:"#64748B",whiteSpace:"nowrap"}}>{item.size}{item.length?` · ${item.length}`:""}</td>
       <td style={{padding:"10px 14px"}}>
         <input type="number" min="1" value={item.quantity} onChange={e=>onQtyChange(item.id,parseInt(e.target.value)||1)}
           style={{width:"56px",padding:"6px",border:"1.5px solid #E2E8F0",borderRadius:"7px",fontSize:"13px",fontWeight:700,textAlign:"center",color:"#0F172A",fontFamily:"'DM Mono',monospace"}}/>
@@ -422,8 +423,8 @@ async function makePDF(items) {
   y+=18;
   doc.setFillColor(241,245,249); doc.rect(mX,y-5,W-mX*2,10,"F");
   doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(71,85,105);
-  const c={n:mX+10,s:mX+52,sz:mX+100,q:mX+152};
-  doc.text("#",mX+2,y); doc.text("Profile",c.n,y); doc.text("Series",c.s,y); doc.text("Size",c.sz,y); doc.text("Qty",c.q,y);
+  const c={n:mX+10,s:mX+52,sz:mX+100,l:mX+138,q:mX+165};
+  doc.text("#",mX+2,y); doc.text("Profile",c.n,y); doc.text("Series",c.s,y); doc.text("Size",c.sz,y); doc.text("Length",c.l,y); doc.text("Qty",c.q,y);
   y+=9;
   items.forEach((item,idx)=>{
     if(y>pH-25){doc.addPage();y=20;}
@@ -431,7 +432,8 @@ async function makePDF(items) {
     doc.setFillColor(...bg); doc.rect(mX,y-5,W-mX*2,9,"F");
     doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(100,116,139); doc.text(String(idx+1),mX+2,y);
     doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42); doc.text(item.name,c.n,y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(71,85,105); doc.text(item.series,c.s,y); doc.text(item.size,c.sz,y);
+    doc.setFont("helvetica","normal"); doc.setTextColor(71,85,105);
+    doc.text(item.series,c.s,y); doc.text(item.size||"",c.sz,y); doc.text(item.length||"-",c.l,y);
     doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42); doc.text(String(item.quantity),c.q,y);
     y+=9;
   });
@@ -444,39 +446,71 @@ async function makePDF(items) {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [selected, setSelected]     = useState([]);
-  const [search, setSearch]         = useState("");
-  const [activeSeries, setSeries]   = useState("All");
-  const [tab, setTab]               = useState("catalog");
-  const [viewMode, setViewMode]     = useState("grid");
-  const [toast, setToast]           = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [selected, setSelected]         = useState([]);
+  const [search, setSearch]             = useState("");
+  const [activeSeries, setSeries]       = useState("All");
+  const [tab, setTab]                   = useState("catalog");
+  const [viewMode, setViewMode]         = useState("grid");
+  const [toast, setToast]               = useState(null);
+  const [pdfLoading, setPdfLoading]     = useState(false);
+  const [sheetDesigns, setSheetDesigns] = useState([]);
+  const [sheetStatus, setSheetStatus]   = useState("idle");
 
-  const allSeries = ["All", ...Object.keys(PAL)];
-
-  const filtered = useMemo(()=>designs.filter(d=>{
-    const q=search.toLowerCase();
-    return (d.name.toLowerCase().includes(q)||d.series.toLowerCase().includes(q))
-      && (activeSeries==="All"||d.series===activeSeries);
-  }),[search,activeSeries]);
-
-  const showToast = (msg,type="success")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),2200); };
-
-  const handleAdd = item => setSelected(prev=>{
-    const ex=prev.find(i=>i.id===item.id);
-    if(ex){ showToast(`Updated ${item.name} → qty ${ex.quantity+item.quantity}`); return prev.map(i=>i.id===item.id?{...i,quantity:i.quantity+item.quantity}:i); }
-    showToast(`${item.name} added`); return [...prev, item];
-  });
-  const handleRemove = id => setSelected(prev=>prev.filter(i=>i.id!==id));
-  const handleQty = (id,q) => setSelected(prev=>prev.map(i=>i.id===id?{...i,quantity:q}:i));
-  const handlePDF = async()=>{
-    if(!selected.length){showToast("Add profiles first","error");return;}
-    setPdfLoading(true);
-    try{await makePDF(selected);showToast("PDF downloaded!");}
-    catch(e){showToast("PDF error","error");}
-    setPdfLoading(false);
+  const fetchSheet = async () => {
+    if (SHEET_ID === "YOUR_GOOGLE_SHEET_ID_HERE") { setSheetStatus("unconfigured"); return; }
+    setSheetStatus("loading");
+    try {
+      const res = await fetch(SHEET_URL);
+      if (!res.ok) throw new Error();
+      const csv = await res.text();
+      const parsed = parseCSV(csv);
+      setSheetDesigns(parsed);
+      setSheetStatus("ok");
+    } catch { setSheetStatus("error"); }
   };
 
+  useEffect(() => { fetchSheet(); }, []);
+
+  const allDesigns = useMemo(() => [...BASE_DESIGNS, ...sheetDesigns], [sheetDesigns]);
+
+  const dynamicPAL = useMemo(() => {
+    const extra = {};
+    let colorIdx = 0;
+    sheetDesigns.forEach(d => {
+      if (!PAL[d.series] && !extra[d.series]) {
+        extra[d.series] = EXTRA_COLORS[colorIdx % EXTRA_COLORS.length];
+        colorIdx++;
+      }
+    });
+    return { ...PAL, ...extra };
+  }, [sheetDesigns]);
+
+  const getPal = (series) => dynamicPAL[series] || {accent:"#334155",light:"#F8FAFC",badge:"#E2E8F0",text:"#1E293B"};
+
+  const allSeries = useMemo(() => ["All", ...Object.keys(dynamicPAL)], [dynamicPAL]);
+
+  const filtered = useMemo(() => allDesigns.filter(d => {
+    const q = search.toLowerCase();
+    return (d.name.toLowerCase().includes(q) || d.series.toLowerCase().includes(q))
+      && (activeSeries === "All" || d.series === activeSeries);
+  }), [search, activeSeries, allDesigns]);
+
+  const showToast = (msg,type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),2200); };
+
+  const handleAdd = item => setSelected(prev => {
+    const ex = prev.find(i => i.id===item.id);
+    if (ex) { showToast(`Updated ${item.name} → qty ${ex.quantity+item.quantity}`); return prev.map(i=>i.id===item.id?{...i,quantity:i.quantity+item.quantity}:i); }
+    showToast(`${item.name} added`); return [...prev, item];
+  });
+  const handleRemove = id => setSelected(prev => prev.filter(i=>i.id!==id));
+  const handleQty = (id,q) => setSelected(prev => prev.map(i=>i.id===id?{...i,quantity:q}:i));
+  const handlePDF = async () => {
+    if (!selected.length) { showToast("Add profiles first","error"); return; }
+    setPdfLoading(true);
+    try { await makePDF(selected); showToast("PDF downloaded!"); }
+    catch { showToast("PDF error","error"); }
+    setPdfLoading(false);
+  };
   const totalQty = selected.reduce((s,i)=>s+i.quantity,0);
 
   return (
@@ -489,13 +523,15 @@ export default function App() {
         ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:#F1F5F9;}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px;}
         .gcard{transition:all 0.18s ease;}.gcard:hover{box-shadow:0 8px 32px rgba(0,0,0,0.11)!important;transform:translateY(-2px);}
         @keyframes fsl{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .spinning{animation:spin 1s linear infinite;}
       `}</style>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"/>
 
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="error"?"#FEF2F2":"#F0FDF4",border:`1.5px solid ${toast.type==="error"?"#FECACA":"#BBF7D0"}`,color:toast.type==="error"?"#DC2626":"#15803D",padding:"10px 18px",borderRadius:"11px",fontSize:"13px",fontWeight:600,boxShadow:"0 4px 20px rgba(0,0,0,0.12)",animation:"fsl 0.2s ease"}}>{toast.msg}</div>}
 
       {/* NAV */}
-      <header style={{background:"#0F172A",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 16px rgba(0,0,0,0.25)"}}>
+      <header style={{background:"#0F172A",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 16px rgba(0,0,0,0.25)",flexWrap:"wrap",gap:"8px"}}>
         <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
           <div style={{background:"linear-gradient(135deg,#4F46E5,#7C3AED)",borderRadius:"10px",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 10px #4F46E555"}}>
             <span style={{color:"#fff",fontSize:"13px",fontWeight:900,fontFamily:"'DM Mono',monospace"}}>SD</span>
@@ -505,20 +541,59 @@ export default function App() {
             <div style={{color:"#475569",fontSize:"9px",letterSpacing:"0.1em",fontWeight:700,textTransform:"uppercase"}}>Profile Selector</div>
           </div>
         </div>
-        <div style={{display:"flex",gap:"4px",background:"#1E293B",borderRadius:"10px",padding:"4px"}}>
-          {[{k:"catalog",l:"Catalog",ic:<I.Grid/>},{k:"cart",l:`Selection${selected.length?` (${selected.length})`:""}`,ic:<I.Cart/>}].map(t=>(
-            <button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"7px 16px",borderRadius:"7px",border:"none",cursor:"pointer",background:tab===t.k?"#334155":"transparent",color:tab===t.k?"#F8FAFC":"#64748B",fontSize:"12px",fontWeight:700,transition:"all 0.15s",display:"flex",alignItems:"center",gap:"6px"}}>
-              {t.ic}{t.l}
-            </button>
-          ))}
+        <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+          {/* Google Sheet status badge */}
+          <div style={{display:"flex",alignItems:"center",gap:"5px",padding:"5px 10px",borderRadius:"8px",background:"#1E293B",fontSize:"11px",fontWeight:600,color:"#64748B"}}>
+            <span className={sheetStatus==="loading"?"spinning":""}><I.Sheet/></span>
+            {sheetStatus==="loading" && <span style={{color:"#94A3B8"}}>Syncing…</span>}
+            {sheetStatus==="ok"      && <span style={{color:"#10B981"}}>+{sheetDesigns.length} from Sheet</span>}
+            {sheetStatus==="error"   && <span style={{color:"#F87171"}}>Sheet error</span>}
+            {sheetStatus==="unconfigured" && <span style={{color:"#F59E0B"}}>Sheet not set</span>}
+            {(sheetStatus==="ok"||sheetStatus==="error") &&
+              <button onClick={fetchSheet} style={{background:"none",border:"none",cursor:"pointer",color:"#475569",padding:"0 0 0 2px",display:"flex",alignItems:"center"}} title="Refresh">
+                <I.Refresh/>
+              </button>
+            }
+          </div>
+          <div style={{display:"flex",gap:"4px",background:"#1E293B",borderRadius:"10px",padding:"4px"}}>
+            {[{k:"catalog",l:"Catalog",ic:<I.Grid/>},{k:"cart",l:`Selection${selected.length?` (${selected.length})`:""}`,ic:<I.Cart/>}].map(t=>(
+              <button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"7px 16px",borderRadius:"7px",border:"none",cursor:"pointer",background:tab===t.k?"#334155":"transparent",color:tab===t.k?"#F8FAFC":"#64748B",fontSize:"12px",fontWeight:700,transition:"all 0.15s",display:"flex",alignItems:"center",gap:"6px"}}>
+                {t.ic}{t.l}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
       <div style={{maxWidth:1440,margin:"0 auto",padding:"24px 20px"}}>
 
+        {/* ── SETUP BANNER ── */}
+        {sheetStatus==="unconfigured" && (
+          <div style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",borderRadius:"12px",padding:"16px 18px",marginBottom:"16px",display:"flex",gap:"14px",alignItems:"flex-start"}}>
+            <span style={{fontSize:"22px",flexShrink:0}}>📋</span>
+            <div>
+              <div style={{fontWeight:700,color:"#92400E",fontSize:"13px",marginBottom:"6px"}}>Connect your Google Sheet in 2 steps</div>
+              <div style={{fontSize:"12px",color:"#78350F",lineHeight:1.8}}>
+                <b>Step 1:</b> Open your Google Sheet → <b>File → Share → Publish to web → Sheet: Products → Format: CSV → Publish</b><br/>
+                <b>Step 2:</b> Open <code style={{background:"#FEF3C7",padding:"1px 5px",borderRadius:"4px"}}>src/App.jsx</code> → find <code style={{background:"#FEF3C7",padding:"1px 5px",borderRadius:"4px"}}>YOUR_GOOGLE_SHEET_ID_HERE</code> → replace with your Sheet ID from the URL<br/>
+                <b>Sheet columns:</b> <code style={{background:"#FEF3C7",padding:"1px 5px",borderRadius:"4px"}}>id | name | series | size | length | image_url</code> (Row 1 = headers)
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sheetStatus==="error" && (
+          <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:"12px",padding:"12px 18px",marginBottom:"16px",display:"flex",gap:"10px",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
+              <span>⚠️</span>
+              <span style={{fontSize:"12px",color:"#991B1B"}}>Could not load Google Sheet. Make sure it's published as CSV and the Sheet ID is correct.</span>
+            </div>
+            <button onClick={fetchSheet} style={{padding:"6px 12px",background:"#FEE2E2",border:"1.5px solid #FECACA",borderRadius:"7px",color:"#DC2626",fontSize:"11px",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Retry</button>
+          </div>
+        )}
+
         {/* ── CATALOG ── */}
         {tab==="catalog"&&<>
-          {/* Controls row */}
           <div style={{display:"flex",flexWrap:"wrap",gap:"10px",alignItems:"center",marginBottom:"16px"}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px",background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:"10px",padding:"0 12px",flex:"1 1 220px",maxWidth:"340px",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
               <I.Search/>
@@ -527,32 +602,28 @@ export default function App() {
             </div>
             <div style={{display:"flex",background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:"9px",overflow:"hidden"}}>
               {[{k:"grid",ic:<I.Grid/>},{k:"list",ic:<I.List/>}].map(({k,ic})=>(
-                <button key={k} onClick={()=>setViewMode(k)} style={{padding:"8px 12px",border:"none",cursor:"pointer",background:viewMode===k?"#0F172A":"transparent",color:viewMode===k?"#fff":"#94A3B8",transition:"all 0.15s"}}>
-                  {ic}
-                </button>
+                <button key={k} onClick={()=>setViewMode(k)} style={{padding:"8px 12px",border:"none",cursor:"pointer",background:viewMode===k?"#0F172A":"transparent",color:viewMode===k?"#fff":"#94A3B8",transition:"all 0.15s"}}>{ic}</button>
               ))}
             </div>
           </div>
 
-          {/* Series pills */}
           <div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginBottom:"18px"}}>
             {allSeries.map(s=>{
-              const p=PAL[s]||{accent:"#334155",badge:"#E2E8F0",text:"#334155"};
-              const act=activeSeries===s;
+              const p=getPal(s); const act=activeSeries===s;
               return <button key={s} onClick={()=>setSeries(s)} style={{padding:"5px 13px",borderRadius:"99px",cursor:"pointer",border:`2px solid ${act?p.accent:"#E2E8F0"}`,background:act?p.accent:"#fff",color:act?"#fff":"#475569",fontSize:"11px",fontWeight:700,transition:"all 0.15s"}}>
-                {s==="All"?`All · ${designs.length}`:s}
+                {s==="All"?`All · ${allDesigns.length}`:s}
               </button>;
             })}
           </div>
 
           <div style={{marginBottom:"12px",color:"#94A3B8",fontSize:"11px",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase"}}>
-            {filtered.length} profiles
+            {filtered.length} profiles{sheetDesigns.length>0&&` · ${sheetDesigns.length} from Google Sheet`}
           </div>
 
           <div style={viewMode==="grid"?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:"12px"}:{display:"flex",flexDirection:"column",gap:"8px"}}>
             {filtered.map(d=>(
               <div key={d.id} className={viewMode==="grid"?"gcard":""}>
-                <DesignCard design={d} onAdd={handleAdd} isSelected={selected.some(i=>i.id===d.id)} viewMode={viewMode}/>
+                <DesignCard design={d} onAdd={handleAdd} isSelected={selected.some(i=>i.id===d.id)} viewMode={viewMode} pal={getPal(d.series)}/>
               </div>
             ))}
           </div>
@@ -596,9 +667,9 @@ export default function App() {
                 </div>
                 <table style={{width:"100%",borderCollapse:"collapse"}}>
                   <thead><tr style={{background:"#F8FAFC",borderBottom:"1px solid #E2E8F0"}}>
-                    {["Profile","Size","Qty",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:"10px",fontWeight:800,color:"#94A3B8",letterSpacing:"0.08em",textTransform:"uppercase"}}>{h}</th>)}
+                    {["Profile","Size / Length","Qty",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:"10px",fontWeight:800,color:"#94A3B8",letterSpacing:"0.08em",textTransform:"uppercase"}}>{h}</th>)}
                   </tr></thead>
-                  <tbody>{selected.map(item=><CartRow key={item.id} item={item} onRemove={handleRemove} onQtyChange={handleQty}/>)}</tbody>
+                  <tbody>{selected.map(item=><CartRow key={item.id} item={item} onRemove={handleRemove} onQtyChange={handleQty} pal={getPal(item.series)}/>)}</tbody>
                 </table>
                 <div style={{padding:"14px 18px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end"}}>
                   <button onClick={handlePDF} disabled={pdfLoading} style={{padding:"10px 26px",borderRadius:"10px",background:"linear-gradient(135deg,#4F46E5,#7C3AED)",color:"#fff",border:"none",fontSize:"13px",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:"7px",boxShadow:"0 4px 20px #4F46E545"}}
