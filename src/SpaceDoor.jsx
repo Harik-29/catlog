@@ -480,7 +480,7 @@ async function makePDF(items) {
 
     // Text details (right of image)
     const tx=mX+imgSize+12;
-    const avW=cardW-imgSize-18;
+    //const avW=cardW-imgSize-18;
 
     // Row number badge
     doc.setFillColor(79,70,229); doc.roundedRect(tx,y+5,6,5,1,1,"F");
