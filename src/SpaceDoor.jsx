@@ -1,3 +1,4 @@
+import { jsPDF } from 'jspdf';
 import { useState, useMemo, useEffect } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -155,15 +156,14 @@ function ProfileSVG({ name, accent, bg }) {
   );
 }
 
-function ProfilePreview({ design, accent, bg }) {
+function ProfilePreview({ design, accent, bg, fullWidth }) {
   const [imgErr, setImgErr] = useState(false);
   const showImage = design.image && !imgErr;
   if (showImage) {
     return (
-      <div style={{ width:80, height:62, borderRadius:6, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", background:bg, position:"relative" }}>
-        <img src={design.image} alt={design.name} onError={()=>setImgErr(true)}
-          style={{width:"100%",height:"100%",objectFit:"contain",display:"block",padding:"4px"}}/>
-        <span style={{ position:"absolute",bottom:2,left:3,fontSize:"7px",fontWeight:800,letterSpacing:"0.06em",color:accent,opacity:0.55,fontFamily:"'DM Mono',monospace",textTransform:"uppercase" }}>IMG</span>
+      <div style={{ width: fullWidth ? "100%" : 80, height: fullWidth ? 160 : 62, borderRadius:8, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", background:"#fff", position:"relative" }}>
+  <img src={design.image} alt={design.name} onError={()=>setImgErr(true)}
+    style={{width:"100%",height:"100%",objectFit:"contain",display:"block",padding:"0px"}}/>
       </div>
     );
   }
@@ -172,76 +172,86 @@ function ProfilePreview({ design, accent, bg }) {
 
 // ─── HARDCODED BASE DESIGNS ───────────────────────────────────────────────────
 const BASE_DESIGNS = [
-  {id:1,  name:"SF16-1T",   series:"SPACEDOR-16",    size:"53 × 80 mm",    image:null},
-  {id:2,  name:"SF16-1S",   series:"SPACEDOR-16",    size:"55 × 33 mm",    image:null},
-  {id:3,  name:"SF16-P",    series:"SPACEDOR-16",    size:"80 × 8 mm",     image:null},
-  {id:4,  name:"SF16-2T",   series:"SPACEDOR-16",    size:"115 × 71 mm",   image:null},
-  {id:5,  name:"SF16-2S",   series:"SPACEDOR-16",    size:"115 × 36 mm",   image:null},
-  {id:6,  name:"SF16-2B",   series:"SPACEDOR-16",    size:"115 × 8 mm",    image:null},
-  {id:7,  name:"SF16-ITB",  series:"SPACEDOR-16",    size:"45 × 30.2 mm",  image:null},
-  {id:8,  name:"SF16-ISH",  series:"SPACEDOR-16",    size:"53.2 × 16 mm",  image:null},
-  {id:9,  name:"SF16-IS",   series:"SPACEDOR-16",    size:"45 × 16 mm",    image:null},
-  {id:10, name:"SF16-I",    series:"SPACEDOR-16",    size:"49.3 × 26 mm",  image:null},
-  {id:11, name:"SF16-3T",   series:"SPACEDOR-16",    size:"172 × 80 mm",   image:null},
-  {id:12, name:"SF16-3S",   series:"SPACEDOR-16",    size:"172 × 30 mm",   image:null},
-  {id:13, name:"SF16-3B",   series:"SPACEDOR-16",    size:"172 × 8 mm",    image:null},
-  {id:14, name:"SF16-C",    series:"SPACEDOR-16",    size:"50 × 16.2 mm",  image:null},
-  {id:15, name:"SF16-3TN",  series:"SPACEDOR-16",    size:"55.4 × 36 mm",  image:null},
-  {id:16, name:"SF16-2TN",  series:"SPACEDOR-16",    size:"169.4 × 36 mm", image:null},
-  {id:17, name:"SF16-1TN",  series:"SPACEDOR-16",    size:"112.4 × 36 mm", image:null},
-  {id:18, name:"SF16-IL",   series:"SPACEDOR-16",    size:"33.7 × 12.1 mm",image:null},
-  {id:19, name:"SF16-P2",   series:"SPACEDOR-16",    size:"80 × 6.8 mm",   image:null},
-  {id:20, name:"SF15-2T",   series:"SPACEDOR-15",    size:"68.6 × 36 mm",  image:null},
-  {id:21, name:"SF15-2B",   series:"SPACEDOR-15",    size:"71 × 23.2 mm",  image:null},
-  {id:22, name:"SF15-3T",   series:"SPACEDOR-15",    size:"102 × 35.5 mm", image:null},
-  {id:23, name:"SF15-3B",   series:"SPACEDOR-15",    size:"104 × 10.1 mm", image:null},
-  {id:24, name:"SF15-3S",   series:"SPACEDOR-15",    size:"104 × 9 mm",    image:null},
-  {id:25, name:"SF15-IT",   series:"SPACEDOR-15",    size:"33 × 24.2 mm",  image:null},
-  {id:26, name:"SF15-IS",   series:"SPACEDOR-15",    size:"24.3 × 27 mm",  image:null},
-  {id:27, name:"SF15-I",    series:"SPACEDOR-15",    size:"25 × 30.5 mm",  image:null},
-  {id:28, name:"SF15-IB",   series:"SPACEDOR-15",    size:"29.4 × 6.5 mm", image:null},
-  {id:29, name:"SF15-ISH",  series:"SPACEDOR-15",    size:"24.9 × 12.4 mm",image:null},
-  {id:30, name:"SF15-4T",   series:"SPACEDOR-15",    size:"136.4 × 35.5 mm",image:null},
-  {id:31, name:"SF15-4S",   series:"SPACEDOR-15",    size:"140 × 25.4 mm", image:null},
-  {id:32, name:"SF15-4B",   series:"SPACEDOR-15",    size:"139.5 × 8 mm",  image:null},
-  {id:33, name:"SF18-T",    series:"SPACEDOR-18",    size:"80 × 56 mm",    image:null},
-  {id:34, name:"SF18-S",    series:"SPACEDOR-18",    size:"74 × 12 mm",    image:null},
-  {id:35, name:"SF18-B",    series:"SPACEDOR-18",    size:"45 × 18 mm",    image:null},
-  {id:36, name:"SF18-I",    series:"SPACEDOR-18",    size:"38 × 21.7 mm",  image:null},
-  {id:37, name:"SF18-IH",   series:"SPACEDOR-18",    size:"44.9 × 9.5 mm", image:null},
-  {id:38, name:"SF25-TS",   series:"SPACEDOR-25",    size:"77 × 52.7 mm",  image:null},
-  {id:39, name:"SF25-I",    series:"SPACEDOR-25",    size:"35.5 × 25.4 mm",image:null},
-  {id:40, name:"SF25-C",    series:"SPACEDOR-25",    size:"36 × 29 mm",    image:null},
-  {id:41, name:"SF25-U",    series:"SPACEDOR-25",    size:"40 × 25.8 mm",  image:null},
-  {id:42, name:"SF25-IH",   series:"SPACEDOR-25",    size:"42.7 × 7.5 mm", image:null},
-  {id:43, name:"SF80-O",    series:"SPACEDOR-80",    size:"37 × 80 mm",    image:null},
-  {id:44, name:"SF80-M",    series:"SPACEDOR-80",    size:"80 × 18.5 mm",  image:null},
-  {id:45, name:"SF80-B",    series:"SPACEDOR-80",    size:"35.5 × 11 mm",  image:null},
-  {id:46, name:"SF80-I",    series:"SPACEDOR-80",    size:"40 × 18 mm",    image:null},
-  {id:47, name:"SFSP-S",    series:"SPACEDOR-S&P",   size:"64 × 55.2 mm",  image:null},
-  {id:48, name:"SFSP-I",    series:"SPACEDOR-S&P",   size:"34 × 59.6 mm",  image:null},
-  {id:49, name:"SFSP-T",    series:"SPACEDOR-S&P",   size:"50.4 × 58.5 mm",image:null},
-  {id:50, name:"SFSP-BH",   series:"SPACEDOR-S&P",   size:"50.4 × 50.4 mm",image:null},
-  {id:51, name:"SFSP-BL",   series:"SPACEDOR-S&P",   size:"50 × 12 mm",    image:null},
-  {id:52, name:"SF58-T",    series:"SPACEDOR-58",    size:"69.4 × 50.1 mm",image:null},
-  {id:53, name:"SF58-S",    series:"SPACEDOR-58",    size:"58.4 × 49.6 mm",image:null},
-  {id:54, name:"SF58-B",    series:"SPACEDOR-58",    size:"58 × 55.4 mm",  image:null},
-  {id:55, name:"SF58-I",    series:"SPACEDOR-58",    size:"63 × 30.2 mm",  image:null},
-  {id:56, name:"SF68-BF1",  series:"SF68-Bi FOLD",   size:"77.3 × 53 mm",  image:null},
-  {id:57, name:"SF68-BF2",  series:"SF68-Bi FOLD",   size:"68 × 42.9 mm",  image:null},
-  {id:58, name:"SF68-BF3",  series:"SF68-Bi FOLD",   size:"68 × 56.5 mm",  image:null},
-  {id:59, name:"SF68-BF4",  series:"SF68-Bi FOLD",   size:"65.2 × 38.3 mm",image:null},
-  {id:60, name:"SF45-TW",   series:"SF45-Bi FOLD",   size:"70.6 × 65 mm",  image:null},
-  {id:61, name:"SF45-TD",   series:"SF45-Bi FOLD",   size:"42 × 44.2 mm",  image:null},
-  {id:62, name:"SF45-JB",   series:"SF45-Bi FOLD",   size:"32 × 23.6 mm",  image:null},
-  {id:63, name:"SF45-IN",   series:"SF45-Bi FOLD",   size:"65 × 35.5 mm",  image:null},
-  {id:64, name:"SFPS-1T",   series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:65, name:"SFPS-1T_DP",series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:66, name:"SFPS-2T",   series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:67, name:"SFPS-3T",   series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:68, name:"SFPS-IN_S", series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:69, name:"SFPS-TTC1", series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
-  {id:70, name:"SFPS-TTS1", series:"PERFECT SYSTEM", size:"90.8 mm",       image:null},
+  {id:1,  name:"SF16-1T",   series:"SPACEDOR-16",        image: "/images/spacedor-16/SF16 - 1T.png"},
+  {id:2,  name:"SF16-1S",   series:"SPACEDOR-16",        image:"/images/spacedor-16/SF16 - 1S.png"},
+  {id:3,  name:"SF16-P",    series:"SPACEDOR-16",        image:"/images/spacedor-16/SF16 - P.png"},
+  {id:4,  name:"SF16-2T",   series:"SPACEDOR-16",       image:"/images/spacedor-16/SF16 - 2T.png"},
+  {id:5,  name:"SF16-2S",   series:"SPACEDOR-16",       image:"/images/spacedor-16/SF16 - 2S.png"},
+  {id:6,  name:"SF16-2B",   series:"SPACEDOR-16",        image:"/images/spacedor-16/SF16 - 2B.png"},
+  {id:7,  name:"SF16-ITB",  series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - ITB.png"},
+  {id:8,  name:"SF16-ISH",  series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - ISH.png"},
+  {id:9,  name:"SF16-IS",   series:"SPACEDOR-16",        image:"/images/spacedor-16/SF16 - IS.png"},
+  {id:10, name:"SF16-I",    series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - I.png"},
+  {id:11, name:"SF16-3T",   series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - 3T.png"},
+  {id:12, name:"SF16-3S",   series:"SPACEDOR-16",       image:"/images/spacedor-16/SF16 - 3S.png"},
+  {id:13, name:"SF16-3B",   series:"SPACEDOR-16",        image:"/images/spacedor-16/SF16 - 3B.png"},
+  {id:14, name:"SF16-C",    series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - C.png"},
+  {id:15, name:"SF16-3TN",  series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - 3TN.png"},
+  {id:16, name:"SF16-2TN",  series:"SPACEDOR-16",     image:"/images/spacedor-16/SF16 - 2TN.png"},
+  {id:17, name:"SF16-1TN",  series:"SPACEDOR-16",     image:"/images/spacedor-16/SF16 - 1TN.png"},
+  {id:18, name:"SF16-IL",   series:"SPACEDOR-16",    image:"/images/spacedor-16/SF16 - IL.png"},
+  {id:19, name:"SF16-P2",   series:"SPACEDOR-16",      image:"/images/spacedor-16/SF16 - P2.png"},
+  {id:20, name:"SF15-2T",   series:"SPACEDOR-15",      image:"/images/SPACEDOR - 15/SF15 - 2T.png"},
+  {id:21, name:"SF15-2B",   series:"SPACEDOR-15",      image:"/images/SPACEDOR - 15/SF15 - 2B.png"},
+  {id:22, name:"SF15-3T",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - 3T.png"},
+  {id:23, name:"SF15-3B",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - 3B.png"},
+  {id:24, name:"SF15-3S",   series:"SPACEDOR-15",       image:"/images/SPACEDOR - 15/SF15 - 3S.png"},
+  {id:25, name:"SF15-IT",   series:"SPACEDOR-15",      image:"/images/SPACEDOR - 15/SF15 - IT.png"},
+  {id:26, name:"SF15-IS",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - IS.png"},
+  {id:27, name:"SF15-I",    series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - I.png"},
+  {id:28, name:"SF15-IB",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - IB.png"},
+  {id:29, name:"SF15-ISH",  series:"SPACEDOR-15",    image:"/images/SPACEDOR - 15/SF15 - ISH.png"},
+  {id:30, name:"SF15-4T",   series:"SPACEDOR-15",    image:"/images/SPACEDOR - 15/SF15 - 4T.png"},
+  {id:31, name:"SF15-4S",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - 4S.png"},
+  {id:32, name:"SF15-4B",   series:"SPACEDOR-15",     image:"/images/SPACEDOR - 15/SF15 - 4B.png"},
+  {id:33, name:"SF18-T",    series:"SPACEDOR-18",        image:"/images/SPACEDOR - 18/SF18 - T.png"},
+  {id:34, name:"SF18-S",    series:"SPACEDOR-18",       image:"/images/SPACEDOR - 18/SF18 - S.png"},
+  {id:35, name:"SF18-B",    series:"SPACEDOR-18",       image:"/images/SPACEDOR - 18/SF18 - B.png"},
+  {id:36, name:"SF18-I",    series:"SPACEDOR-18",    image:"/images/SPACEDOR - 18/SF18 - I.png"},
+  {id:37, name:"SF18-IH",   series:"SPACEDOR-18",     image:"/images/SPACEDOR - 18/SF18 - IH.png"},
+  {id:38, name:"SF25-TS",   series:"SPACEDOR-25",     image:"/images/SPACEDOR - 25/SF25 - TS.png"},
+  {id:39, name:"SF25-I",    series:"SPACEDOR-25",    image:"/images/SPACEDOR - 25/SF25 - I.png"},
+  {id:40, name:"SF25-C",    series:"SPACEDOR-25",     image:"/images/SPACEDOR - 25/SF25 - C.png"},
+  {id:41, name:"SF25-U",    series:"SPACEDOR-25",      image:"/images/SPACEDOR - 25/SF25 - U.png"},
+  {id:42, name:"SF25-IH",   series:"SPACEDOR-25",     image:"/images/SPACEDOR - 25/SF25 - IH.png"},
+  {id:43, name:"SF80-O",    series:"SPACEDOR-80",       image:"/images/SPACEDOR - 80/SF80 - O.png"},
+  {id:44, name:"SF80-M",    series:"SPACEDOR-80",      image:"/images/SPACEDOR - 80/SF80 - M.png"},
+  {id:45, name:"SF80-B",    series:"SPACEDOR-80",      image:"/images/SPACEDOR - 80/SF80 - B.png"},
+  {id:46, name:"SF80-I",    series:"SPACEDOR-80",        image:"/images/SPACEDOR - 80/SF80 - I.png"},
+  {id:47, name:"SFSP-S",    series:"SPACEDOR-S&P",     image:"/images/SPACEDOR - S&P/SFSP - S.png"},
+  {id:48, name:"SFSP-I",    series:"SPACEDOR-S&P",     image:"/images/SPACEDOR - S&P/SFSP - I.png"},
+  {id:49, name:"SFSP-T",    series:"SPACEDOR-S&P",  image:"/images/SPACEDOR - S&P/SFSP - T.png"},
+  {id:50, name:"SFSP-BH",   series:"SPACEDOR-S&P",   image:"/images/SPACEDOR - S&P/SFSP - BH.png"},
+  {id:51, name:"SFSP-BL",   series:"SPACEDOR-S&P",     image:"/images/SPACEDOR - S&P/SFSP - BL.png"},
+  {id:52, name:"SF58-T",    series:"SPACEDOR-58",    image:"/images/SPACEDOR -58/SF58 - T.png"},
+  {id:53, name:"SF58-S",    series:"SPACEDOR-58",    image:"/images/SPACEDOR -58/SF58 - S.png"},
+  {id:54, name:"SF58-B",    series:"SPACEDOR-58",     image:"/images/SPACEDOR -58/SF58 - B.png"},
+  {id:55, name:"SF58-I",    series:"SPACEDOR-58",      image:"/images/SPACEDOR -58/SF58 - I.png"},
+  {id:60, name:"SF45-TW",   series:"SF45-Bi FOLD",    image:"/images/SF45 - Bi FOLD/SF45 - TW.png"},
+  {id:61, name:"SF45-TD",   series:"SF45-Bi FOLD",    image:"/images/SF45 - Bi FOLD/SF45 - TD.png"},
+  {id:62, name:"SF45-JB",   series:"SF45-Bi FOLD",    image:"/images/SF45 - Bi FOLD/SF45 - JB.png"},
+  {id:63, name:"SF45-IN",   series:"SF45-Bi FOLD",    image:"/images/SF45 - Bi FOLD/SF45 - IN.png"},
+  {id:64, name:"SFPS-1T",   series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - 1T.png"},
+  {id:65, name:"SFPS-1T_DP",series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - 1T_DP.png"},
+  {id:66, name:"SFPS-2T",   series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - 2T.png"},
+  {id:67, name:"SFPS-3T",   series:"PERFECT SYSTEM",       image:"/images/SFPS - PERFECT-SYSTEM/SFPS - 3T.png"},
+  {id:68, name:"SFPS-IN_S", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - IN_S.png"},
+  {id:69, name:"SFPS-TTC1", series:"PERFECT SYSTEM",       image:"/images/SFPS - PERFECT-SYSTEM/SFPS - TTC1.png"},
+  {id:70, name:"SFPS-TTS1", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - TTS1.png"},
+  {id:71, name:"SFPS-IN_C", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - IN_C.png"},
+  {id:72, name:"SFPS-IN_T&B", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - IN_T&B.png"},
+  {id:73, name:"SFPS-TTC2", series:"PERFECT SYSTEM",       image:"/images/SFPS - PERFECT-SYSTEM/SFPS - TTC2.png"},
+  {id:74, name:"SFPS-TTS2", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - TTS2.png"},
+  {id:75, name:"SFPS-TTS3", series:"PERFECT SYSTEM",        image:"/images/SFPS - PERFECT-SYSTEM/SFPS - TTS3.png"},
+  {id:76, name:"SF18-Inner Frame", series:"SF18-SLIDING",image:"/images/SF18 - SLIDING/SF18-Inner Frame.png"},
+  {id:77, name:"SF18-Inner I Section", series:"SF18-SLIDING",        image:"/images/SF18 - SLIDING/SF18-Inner I Section.png"},
+  {id:78, name:"SF18-Top Track", series:"SF18-SLIDING",       image:"/images/SF18 - SLIDING/SF18-Top Track.png"},
+  {id:79, name:"SF18-Side Frame", series:"SF18-SLIDING",       image:"/images/SF18 - SLIDING/SF18-Side Frame.png"},
+  {id:80, name:"SF18-Bottom Track", series:"SF18-SLIDING",       image:"/images/SF18 - SLIDING/SF18-Bottom Track.png"},
+  {id:81, name:"SF18-Top Track- 3Track", series:"SF18-SLIDING",      image:"/images/SF18 - SLIDING/SF18-Top Track- 3Track.png"},
+  {id:82, name:"SF18-Side Cover", series:"SF18-SLIDING",      image:"/images/SF18 - SLIDING/SF18-Side Cover.png"},
+  {id:83, name:"SF18-Side Frame-3Track", series:"SF18-SLIDING",       image:"/images/SF18 - SLIDING/SF18-Side Frame-3Track.png"},
+  {id:84, name:"SF18-Bottom Track-3Track", series:"SF18-SLIDING",       image:"/images/SF18 - SLIDING/SF18-Bottom Track-3Track.png"},
 ];
 
 const PAL = {
@@ -255,6 +265,7 @@ const PAL = {
   "SF68-Bi FOLD":   {accent:"#0F766E",light:"#F0FDFA",badge:"#99F6E4",text:"#134E4A"},
   "SF45-Bi FOLD":   {accent:"#A21CAF",light:"#FDF4FF",badge:"#F5D0FE",text:"#701A75"},
   "PERFECT SYSTEM": {accent:"#1E293B",light:"#F8FAFC",badge:"#CBD5E1",text:"#0F172A"},
+  "SF18-SLIDING":    {accent:"#059669",light:"#ECFDF5",badge:"#A7F3D0",text:"#065F46"},
 };
 
 const EXTRA_COLORS = [
@@ -314,8 +325,9 @@ const I = {
 // ─── DESIGN CARD ──────────────────────────────────────────────────────────────
 function DesignCard({ design, onAdd, isSelected, viewMode, pal }) {
   const [qty, setQty] = useState(1);
+  const [length, setLength] = useState("");
   const p = pal;
-  const doAdd = () => { if (!qty || qty < 1) return; onAdd({ ...design, quantity: qty }); setQty(1); };
+  const doAdd = () => { if (!qty || qty < 1) return; onAdd({ ...design, quantity: qty, length: length || design.length || "" }); setQty(1); setLength(""); };
 
   if (viewMode === "list") return (
     <div style={{ background:"#fff", border: isSelected?`2px solid ${p.accent}`:"2px solid #F1F5F9", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", gap:"12px", transition:"all 0.18s", boxShadow: isSelected?`0 2px 16px ${p.accent}22`:"0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -332,6 +344,8 @@ function DesignCard({ design, onAdd, isSelected, viewMode, pal }) {
         <div style={{fontSize:"11px",color:"#94A3B8",marginTop:"1px"}}>{design.size}{design.length?` · L: ${design.length}`:""}</div>
       </div>
       <div style={{display:"flex",gap:"6px",alignItems:"center",flexShrink:0}}>
+        <input type="text" placeholder="Length" value={length} onChange={e=>setLength(e.target.value)}
+          style={{width:"72px",padding:"6px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"12px",fontWeight:600,textAlign:"center",outline:"none",fontFamily:"'DM Mono',monospace",color:"#0F172A",placeholder:"Length"}}/>
         <input type="number" min="1" value={qty} onChange={e=>setQty(parseInt(e.target.value)||"")}
           style={{width:"52px",padding:"6px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"13px",fontWeight:700,textAlign:"center",outline:"none",fontFamily:"'DM Mono',monospace",color:"#0F172A"}}/>
         <button onClick={doAdd} disabled={!qty||qty<1}
@@ -351,27 +365,32 @@ function DesignCard({ design, onAdd, isSelected, viewMode, pal }) {
         </div>
         {design.fromSheet && <span style={{background:"#D1FAE5",color:"#065F46",borderRadius:"99px",fontSize:"8px",padding:"1px 6px",fontWeight:700,fontFamily:"'DM Mono',monospace"}}>SHEET</span>}
       </div>
-      <div style={{display:"flex",justifyContent:"center",alignItems:"center",background:p.light,borderRadius:"10px",padding:"6px 8px",border:`1.5px solid ${p.badge}`,position:"relative",minHeight:"74px"}}>
-        <ProfilePreview design={design} accent={p.accent} bg={p.light}/>
+      <div style={{background:p.light,borderRadius:"10px",border:`1.5px solid ${p.badge}`,position:"relative",overflow:"hidden"}}>
+        <ProfilePreview design={design} accent={p.accent} bg={p.light} fullWidth={!!design.image}/>
         <div style={{position:"absolute",bottom:3,right:6,fontSize:"8px",color:p.accent,fontFamily:"'DM Mono',monospace",fontWeight:600,opacity:0.65}}>{design.size}</div>
       </div>
       <div style={{fontSize:"14px",fontWeight:800,color:"#0F172A",fontFamily:"'DM Mono',monospace",letterSpacing:"-0.02em"}}>{design.name}</div>
       {design.length && <div style={{fontSize:"11px",color:"#64748B",marginTop:"-6px"}}>Length: {design.length}</div>}
-      <div style={{display:"flex",gap:"6px",alignItems:"center",marginTop:"auto"}}>
-        <input type="number" min="1" value={qty} onChange={e=>setQty(parseInt(e.target.value)||"")}
-          style={{width:"52px",padding:"7px 6px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"13px",fontWeight:700,color:"#0F172A",textAlign:"center",outline:"none",fontFamily:"'DM Mono',monospace"}}/>
-        <button onClick={doAdd} disabled={!qty||qty<1}
-          style={{flex:1,padding:"8px 10px",background:p.accent,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px",opacity:(!qty||qty<1)?0.35:1,transition:"opacity 0.15s"}}>
-          <I.Plus/> Add
-        </button>
+      <div style={{display:"flex",flexDirection:"column",gap:"5px",marginTop:"auto"}}>
+        <input type="text" placeholder="Length (e.g. 6000mm)" value={length} onChange={e=>setLength(e.target.value)}
+          style={{width:"100%",padding:"7px 8px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"11px",fontWeight:600,color:"#0F172A",outline:"none",fontFamily:"'DM Mono',monospace"}}/>
+        <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+          <input type="number" min="1" value={qty} onChange={e=>setQty(parseInt(e.target.value)||"")}
+            style={{width:"52px",padding:"7px 6px",border:"1.5px solid #E2E8F0",borderRadius:"8px",fontSize:"13px",fontWeight:700,color:"#0F172A",textAlign:"center",outline:"none",fontFamily:"'DM Mono',monospace"}}/>
+          <button onClick={doAdd} disabled={!qty||qty<1}
+            style={{flex:1,padding:"8px 10px",background:p.accent,color:"#fff",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px",opacity:(!qty||qty<1)?0.35:1,transition:"opacity 0.15s"}}>
+            <I.Plus/> Add
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 // ─── CART ROW ─────────────────────────────────────────────────────────────────
-function CartRow({ item, onRemove, onQtyChange, pal }) {
+function CartRow({ item, uid, onRemove, onQtyChange, pal }) {
   const p = pal;
+  const rowUid = uid || `${item.id}__${item.length||""}`;
   return (
     <tr style={{borderBottom:"1px solid #F1F5F9"}}>
       <td style={{padding:"10px 14px"}}>
@@ -387,11 +406,11 @@ function CartRow({ item, onRemove, onQtyChange, pal }) {
       </td>
       <td style={{padding:"10px 14px",fontSize:"12px",color:"#64748B",whiteSpace:"nowrap"}}>{item.size}{item.length?` · ${item.length}`:""}</td>
       <td style={{padding:"10px 14px"}}>
-        <input type="number" min="1" value={item.quantity} onChange={e=>onQtyChange(item.id,parseInt(e.target.value)||1)}
+        <input type="number" min="1" value={item.quantity} onChange={e=>onQtyChange(rowUid,parseInt(e.target.value)||1)}
           style={{width:"56px",padding:"6px",border:"1.5px solid #E2E8F0",borderRadius:"7px",fontSize:"13px",fontWeight:700,textAlign:"center",color:"#0F172A",fontFamily:"'DM Mono',monospace"}}/>
       </td>
       <td style={{padding:"10px 14px",textAlign:"right"}}>
-        <button onClick={()=>onRemove(item.id)}
+        <button onClick={()=>onRemove(rowUid)}
           style={{background:"#FFF1F2",color:"#E11D48",border:"none",borderRadius:"7px",padding:"6px 8px",cursor:"pointer",display:"inline-flex",alignItems:"center",transition:"background 0.15s"}}
           onMouseOver={e=>e.currentTarget.style.background="#FFE4E6"}
           onMouseOut={e=>e.currentTarget.style.background="#FFF1F2"}>
@@ -404,9 +423,10 @@ function CartRow({ item, onRemove, onQtyChange, pal }) {
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 async function makePDF(items) {
-  const { jsPDF } = window.jspdf;
   const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
   const W=210,pH=297,mX=15;
+
+  // Header
   doc.setFillColor(15,23,42); doc.rect(0,0,W,36,"F");
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(248,250,252);
   doc.text("SpaceDor Marketing Pte. Ltd.",mX,15);
@@ -415,32 +435,91 @@ async function makePDF(items) {
   doc.text("T: 6547 8332  |  F: 6547 8384  |  E: spacedorpteltd@gmail.com",mX,28);
   const d=new Date().toLocaleDateString("en-SG",{day:"2-digit",month:"short",year:"numeric"});
   doc.setTextColor(203,213,225); doc.text(d,W-mX,15,{align:"right"});
-  let y=50;
+
+  // Title
+  let y=48;
   doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(15,23,42);
   doc.text("Extrusion Profile Selection",mX,y);
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(100,116,139);
   doc.text(`${items.length} profile(s)  ·  Total qty: ${items.reduce((s,i)=>s+i.quantity,0)}`,mX,y+7);
   y+=18;
-  doc.setFillColor(241,245,249); doc.rect(mX,y-5,W-mX*2,10,"F");
-  doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(71,85,105);
-  const c={n:mX+10,s:mX+52,sz:mX+100,l:mX+138,q:mX+165};
-  doc.text("#",mX+2,y); doc.text("Profile",c.n,y); doc.text("Series",c.s,y); doc.text("Size",c.sz,y); doc.text("Length",c.l,y); doc.text("Qty",c.q,y);
-  y+=9;
-  items.forEach((item,idx)=>{
-    if(y>pH-25){doc.addPage();y=20;}
-    const bg=idx%2===0?[255,255,255]:[248,250,252];
-    doc.setFillColor(...bg); doc.rect(mX,y-5,W-mX*2,9,"F");
-    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(100,116,139); doc.text(String(idx+1),mX+2,y);
-    doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42); doc.text(item.name,c.n,y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(71,85,105);
-    doc.text(item.series,c.s,y); doc.text(item.size||"",c.sz,y); doc.text(item.length||"-",c.l,y);
-    doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42); doc.text(String(item.quantity),c.q,y);
-    y+=9;
+
+  // Load images
+  const loadImage = (url) => new Promise((resolve)=>{
+    const img=new Image(); img.crossOrigin="anonymous";
+    img.onload=()=>resolve(img);
+    img.onerror=()=>resolve(null);
+    img.src=url;
   });
+  const images = await Promise.all(items.map(item=> item.image ? loadImage(item.image) : Promise.resolve(null)));
+
+  // Product cards — single column full width
+  const cardH=48, imgSize=40, cardW=W-mX*2;
+
+  for(let idx=0;idx<items.length;idx++){
+    const item=items[idx];
+    const img=images[idx];
+
+    if(y+cardH>pH-20){ doc.addPage(); y=20; }
+
+    // Card bg
+    doc.setFillColor(248,250,252);
+    doc.roundedRect(mX,y,cardW,cardH,3,3,"F");
+    doc.setDrawColor(226,232,240); doc.setLineWidth(0.3);
+    doc.roundedRect(mX,y,cardW,cardH,3,3,"S");
+
+    // Image box (left side)
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(mX+4,y+4,imgSize,imgSize,2,2,"F");
+    if(img){
+      try{ doc.addImage(img,"PNG",mX+4,y+4,imgSize,imgSize,"","FAST"); }catch(e){}
+    } else {
+      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(148,163,184);
+      doc.text(item.name.substring(0,5),mX+4+imgSize/2,y+4+imgSize/2+2,{align:"center"});
+    }
+
+    // Text details (right of image)
+    const tx=mX+imgSize+12;
+    const avW=cardW-imgSize-18;
+
+    // Row number badge
+    doc.setFillColor(79,70,229); doc.roundedRect(tx,y+5,6,5,1,1,"F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(7); doc.setTextColor(255,255,255);
+    doc.text(String(idx+1),tx+3,y+9,{align:"center"});
+
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(15,23,42);
+    doc.text(item.name,tx+9,y+10);
+
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(100,116,139);
+    doc.text(item.series,tx,y+18);
+
+    // Divider line
+    doc.setDrawColor(226,232,240); doc.setLineWidth(0.3);
+    doc.line(tx,y+21,mX+cardW-4,y+21);
+
+    doc.setFontSize(9); doc.setTextColor(71,85,105);
+    doc.text(`Size:`,tx,y+28);
+    doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42);
+    doc.text(item.size||"-",tx+14,y+28);
+
+    doc.setFont("helvetica","normal"); doc.setTextColor(71,85,105);
+    doc.text(`Length:`,tx,y+35);
+    doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42);
+    doc.text(item.length||"-",tx+18,y+35);
+
+    doc.setFont("helvetica","normal"); doc.setTextColor(71,85,105);
+    doc.text(`Qty:`,tx,y+42);
+    doc.setFont("helvetica","bold"); doc.setTextColor(79,70,229);
+    doc.text(String(item.quantity),tx+11,y+42);
+
+    y+=cardH+5;
+  }
+
+  // Footer
   doc.setDrawColor(226,232,240); doc.setLineWidth(0.4); doc.line(mX,pH-16,W-mX,pH-16);
   doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(148,163,184);
   doc.text("Generated by SpaceDor Profile Selector",mX,pH-11);
-  doc.text("Page 1",W-mX,pH-11,{align:"right"});
+  doc.text(d,W-mX,pH-11,{align:"right"});
   doc.save("SpaceDor_Profile_Selection.pdf");
 }
 
@@ -498,12 +577,18 @@ export default function App() {
   const showToast = (msg,type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),2200); };
 
   const handleAdd = item => setSelected(prev => {
-    const ex = prev.find(i => i.id===item.id);
-    if (ex) { showToast(`Updated ${item.name} → qty ${ex.quantity+item.quantity}`); return prev.map(i=>i.id===item.id?{...i,quantity:i.quantity+item.quantity}:i); }
-    showToast(`${item.name} added`); return [...prev, item];
+    // Same product + same length → merge qty. Different length → separate row
+    const uniqueKey = `${item.id}__${item.length||""}`;
+    const ex = prev.find(i => `${i.id}__${i.length||""}` === uniqueKey);
+    if (ex) {
+      showToast(`Updated ${item.name} (${item.length||"no length"}) → qty ${ex.quantity+item.quantity}`);
+      return prev.map(i => `${i.id}__${i.length||""}` === uniqueKey ? {...i, quantity:i.quantity+item.quantity} : i);
+    }
+    showToast(`${item.name}${item.length ? ` · ${item.length}` : ""} added`);
+    return [...prev, {...item, _uid: uniqueKey}];
   });
-  const handleRemove = id => setSelected(prev => prev.filter(i=>i.id!==id));
-  const handleQty = (id,q) => setSelected(prev => prev.map(i=>i.id===id?{...i,quantity:q}:i));
+  const handleRemove = uid => setSelected(prev => prev.filter(i=>`${i.id}__${i.length||""}`!==uid));
+  const handleQty = (uid,q) => setSelected(prev => prev.map(i=>`${i.id}__${i.length||""}`===uid?{...i,quantity:q}:i));
   const handlePDF = async () => {
     if (!selected.length) { showToast("Add profiles first","error"); return; }
     setPdfLoading(true);
@@ -669,7 +754,7 @@ export default function App() {
                   <thead><tr style={{background:"#F8FAFC",borderBottom:"1px solid #E2E8F0"}}>
                     {["Profile","Size / Length","Qty",""].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:"10px",fontWeight:800,color:"#94A3B8",letterSpacing:"0.08em",textTransform:"uppercase"}}>{h}</th>)}
                   </tr></thead>
-                  <tbody>{selected.map(item=><CartRow key={item.id} item={item} onRemove={handleRemove} onQtyChange={handleQty} pal={getPal(item.series)}/>)}</tbody>
+                  <tbody>{selected.map(item=>{ const uid=`${item.id}__${item.length||""}`; return <CartRow key={uid} uid={uid} item={item} onRemove={handleRemove} onQtyChange={handleQty} pal={getPal(item.series)}/>; })}</tbody>
                 </table>
                 <div style={{padding:"14px 18px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"flex-end"}}>
                   <button onClick={handlePDF} disabled={pdfLoading} style={{padding:"10px 26px",borderRadius:"10px",background:"linear-gradient(135deg,#4F46E5,#7C3AED)",color:"#fff",border:"none",fontSize:"13px",fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:"7px",boxShadow:"0 4px 20px #4F46E545"}}
